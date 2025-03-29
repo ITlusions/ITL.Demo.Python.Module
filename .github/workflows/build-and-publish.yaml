@@ -16,8 +16,8 @@ permissions:
 jobs:
   ci-build:
     if: |
-      startsWith(github.ref, 'refs/heads/feature/') || 
-      (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main'))
+        startsWith(github.ref, 'refs/heads/feature/') || 
+        (github.event_name == 'pull_request' && github.event.action == 'opened' && (github.base_ref == 'develop' || github.base_ref == 'main'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
