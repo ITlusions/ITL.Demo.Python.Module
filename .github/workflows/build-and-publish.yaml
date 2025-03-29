@@ -1,0 +1,83 @@
+name: Build and Publish Python Package
+
+on:
+  push:
+    branches:
+      - 'feature/*'
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  ci-build:
+    if: startsWith(github.ref, 'refs/heads/feature/') || (github.event_name == 'pull_request' && github.base_ref == 'develop')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel
+
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
+          ls -l dist/
+
+  release:
+    needs: ci-build
+    if: github.event_name == 'pull_request' && (github.base_ref == "develop" || github.base_ref == "main")
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Compute Version
+        id: compute_version
+        run: |
+          git fetch --tags || true
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
+          BUILD_NUMBER=${{ github.run_number }}
+
+          if [[ "${{ github.base_ref }}" == "develop" ]]; then
+            FULL_VERSION="${LAST_TAG}-dev.${BUILD_NUMBER}"
+          else
+            FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"
+          fi
+
+          echo "Computed version: $FULL_VERSION"
+          echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
+          ls -l dist/
+
+    #   - name: Publish to GitHub Packages
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     run: |
+    #       pip install twine
+    #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
