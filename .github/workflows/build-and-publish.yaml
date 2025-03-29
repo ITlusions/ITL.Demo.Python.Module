@@ -3,7 +3,6 @@ name: Build and Publish Python Package
 on:
   push:
     branches:
-      - main
       - 'feature/*'
   pull_request:
     branches:
@@ -18,8 +17,7 @@ jobs:
   ci-build:
     if: |
         startsWith(github.ref, 'refs/heads/feature/') || 
-        (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
-        (github.base_ref == 'develop' || github.base_ref == 'main'))
+        (github.event_name == 'pull_request' && github.event.action == 'opened' && (github.base_ref == 'develop' || github.base_ref == 'main'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -43,8 +41,8 @@ jobs:
   release:
     needs: ci-build
     if: |
-        startsWith(github.ref, 'refs/heads/feature/') || 
-        (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main'))
+        (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
+        (github.base_ref == 'develop' || github.base_ref == 'main'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
