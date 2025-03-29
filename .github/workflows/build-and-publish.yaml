@@ -15,7 +15,9 @@ permissions:
 
 jobs:
   ci-build:
-    if: startsWith(github.ref, 'refs/heads/feature/') || (github.event_name == 'pull_request' && github.base_ref == 'develop')
+    if: |
+      startsWith(github.ref, 'refs/heads/feature/') || 
+      (github.event_name == 'pull_request' && github.base_ref == 'develop')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,7 +40,9 @@ jobs:
 
   release:
     needs: ci-build
-    if: github.event_name == 'pull_request' && (github.base_ref == "develop" || github.base_ref == "main")
+    if: |
+      github.event_name == 'pull_request' && 
+      (github.base_ref == 'develop' || github.base_ref == 'main')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -75,9 +79,9 @@ jobs:
           python setup.py sdist bdist_wheel
           ls -l dist/
 
-    #   - name: Publish to GitHub Packages
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     run: |
-    #       pip install twine
-    #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install twine
+          python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
