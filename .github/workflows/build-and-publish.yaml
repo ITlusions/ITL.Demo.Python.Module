@@ -1,4 +1,5 @@
 name: Build and Publish Python Package
+run-name: build-${{ github.ref_name }}-${{ github.run_number }}
 
 on:
   push:
@@ -17,6 +18,7 @@ permissions:
 
 jobs:
   ci-build:
+    name: CI Build for ${{ github.ref_name }} - Run ${{ github.run_number }}
     if: |
         startsWith(github.ref, 'refs/heads/feature/') || 
         (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'closed') && 
@@ -44,12 +46,16 @@ jobs:
           ls -l dist/
 
   release:
+    name: Release Job for ${{ github.ref_name }} - Run ${{ github.run_number }}
     needs: ci-build
     if: |
         (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
         (github.base_ref == 'develop' || github.base_ref == 'main')) || 
         (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
+    environment:
+       name: production
+       url: https://github.com/${{ github.repository }}/releases
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -123,12 +129,14 @@ jobs:
   
             echo "Computed version: $FULL_VERSION"
             echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
+            echo "::set-output name=PACKAGE_VERSION::$FULL_VERSION"
+        
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
-      - name: Build package
+      - name: Build package ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
         run: |
           python setup.py sdist bdist_wheel
           ls -l dist/
@@ -139,12 +147,12 @@ jobs:
     #     run: |
     #       pip install twine
     #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
-      - name: Push Git Tag
+      - name: Push Git Tag ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
             # Configure git
             git config --global user.email "info@itlusions.nl"
             git config --global user.name "ActionsBot"
-            git tag -a $PACKAGE_VERSION -m "Release $PACKAGE_VERSION"
-            git push origin $PACKAGE_VERSION
+            git tag -a ${{ steps.compute_version.outputs.PACKAGE_VERSION }} -m "Release ${{ steps.compute_version.outputs.PACKAGE_VERSION }}"
+            git push origin ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
