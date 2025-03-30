@@ -44,7 +44,7 @@ jobs:
   release:
     needs: ci-build
     if: |
-        (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
+        (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'closed') && 
         (github.base_ref == 'develop' || github.base_ref == 'main')) || 
         (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
