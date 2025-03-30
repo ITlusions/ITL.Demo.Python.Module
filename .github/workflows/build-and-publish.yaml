@@ -94,3 +94,12 @@ jobs:
         run: |
           pip install twine
           python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
+      - name: Push Git Tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            # Configure git
+            git config --global user.email "info@itlusions.nl"
+            git config --global user.name "ActionsBot"
+            git tag -a $PACKAGE_VERSION -m "Release $PACKAGE_VERSION"
+            git push origin $PACKAGE_VERSION
