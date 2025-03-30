@@ -68,11 +68,10 @@ jobs:
 
           if [[ "${{ github.base_ref }}" == "develop" ]]; then
             FULL_VERSION="${LAST_TAG}-dev.${BUILD_NUMBER}"
-          else
-            [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+          elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
             BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
             FULL_VERSION="${LAST_TAG}-${BRANCH_NAME}.${BUILD_NUMBER}"
-          elsif  
+          else
             FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"    
           fi
 
