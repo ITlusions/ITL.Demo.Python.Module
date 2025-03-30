@@ -147,6 +147,17 @@ jobs:
     #     run: |
     #       pip install twine
     #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.PACKAGE_VERSION }}
+          name: "Release ${{ env.PACKAGE_VERSION }}"
+          body: "Automated release for version ${{ env.PACKAGE_VERSION }}."
+          draft: false
+          prerelease: false
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Push Git Tag ${{ env.PACKAGE_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -154,5 +165,5 @@ jobs:
             # Configure git
             git config --global user.email "info@itlusions.nl"
             git config --global user.name "ActionsBot"
-            git tag -a ${{ steps.compute_version.outputs.PACKAGE_VERSION }} -m "Release ${{ steps.compute_version.outputs.PACKAGE_VERSION }}"
-            git push origin ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
+            git tag -a ${{ env.PACKAGE_VERSION }} -m "Release ${{ env.PACKAGE_VERSION }}"
+            git push origin ${{ env.PACKAGE_VERSION }}
