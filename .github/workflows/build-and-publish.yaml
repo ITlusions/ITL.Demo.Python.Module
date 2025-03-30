@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+      
 
       - name: Install dependencies
         run: |
@@ -61,78 +62,67 @@ jobs:
       - name: Extract Base Version
         id: extract_version
         run: |
-          BASE_VERSION=$(grep -oP '(?<=BASE_VERSION = ")[^"]+' setup.py)
-          echo "Base version: $BASE_VERSION"
-          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
-
+            BASE_VERSION=$(grep -oP '(?<=BASE_VERSION = ")[^"]+' setup.py)
+            echo "Base version: $BASE_VERSION"
+            echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+  
       - name: Check and Push Base Version Tag
         id: check_base_version
         run: |
-          git fetch --tags --force || true
-          LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "")
-          echo "Last tag: $LAST_TAG"
+            git fetch --tags --force || true
+            LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "")
+            echo "Last tag: $LAST_TAG"
+  
+            if [[ -n "$LAST_TAG" ]]; then
+              LAST_BASE_VERSION=$(echo "$LAST_TAG" | grep -oP '^\d+\.\d+')
+            else
+              LAST_BASE_VERSION=""
+            fi
 
-          if [[ -n "$LAST_TAG" ]]; then
-            LAST_BASE_VERSION=$(echo "$LAST_TAG" | grep -oP '^\d+\.\d+')
-          else
-            LAST_BASE_VERSION=""
-          fi
-
-          if [[ "$BASE_VERSION" > "$LAST_BASE_VERSION" ]]; then
-            echo "New base version detected: $BASE_VERSION"
-            git config --global user.email "info@itlusions.nl"
-            git config --global user.name "ActionsBot"
-            git tag -a "$BASE_VERSION.0-rc1" -m "Base version $BASE_VERSION Release Candidate 1"
-            git push origin "$BASE_VERSION.0-rc1"
-          else
-            echo "Base version $BASE_VERSION is not higher than the last base version $LAST_BASE_VERSION or already exists as a tag."
-          fi
-
+            if [[ "$BASE_VERSION" > "$LAST_BASE_VERSION" ]]; then
+              echo "New base version detected: $BASE_VERSION"
+              git config --global user.email "info@itlusions.nl"
+              git config --global user.name "ActionsBot"
+              git tag -a "$BASE_VERSION.0" -m "Base version $BASE_VERSION"
+              git push origin "$BASE_VERSION.0"
+            else
+              echo "Base version $BASE_VERSION is not higher than the last base version $LAST_BASE_VERSION or already exists as a tag."
+            fi
+  
       - name: Compute Full Version
         id: compute_version
         run: |
-          git fetch --tags --force || true
-          LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "$BASE_VERSION")
-          BUILD_NUMBER=${{ github.run_number }}
-
-          # Extract major, minor, and patch versions
-          MAJOR=$(echo $LAST_TAG | cut -d'.' -f1)
-          MINOR=$(echo $LAST_TAG | cut -d'.' -f2)
-          PATCH=$(echo $LAST_TAG | cut -d'.' -f3 | grep -oP '^\d+')
-
-          # Check if the latest tag is a release candidate (e.g., 1.3.0-rc1)
-          IS_RC=$(echo "$LAST_TAG" | grep -oP 'rc\d+')
-
-          if [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
-            if [[ -n "$IS_RC" ]]; then
-              # If the latest tag is a release candidate, use the base version and append .dev.<BUILD_NUMBER>
-              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.dev.${BUILD_NUMBER}"
-            else
-              # Increment the patch version and append .dev.<BUILD_NUMBER> for develop
+            git fetch --tags --force || true
+            LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "$BASE_VERSION")
+            BUILD_NUMBER=${{ github.run_number }}
+  
+            # Extract major, minor, and patch versions
+            MAJOR=$(echo $LAST_TAG | cut -d'.' -f1)
+            MINOR=$(echo $LAST_TAG | cut -d'.' -f2)
+            PATCH=$(echo $LAST_TAG | cut -d'.' -f3)
+  
+            # Increment the patch version for both develop and main branches
+            if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
               PATCH=$((PATCH + 1))
+            fi
+  
+            if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+              # Use the incremented patch version for main
+              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+              # Use the incremented patch version and append .dev.<BUILD_NUMBER> for develop
               FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.dev.${BUILD_NUMBER}"
-            fi
-          elif [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
-            if [[ -n "$IS_RC" ]]; then
-              # If the latest tag is a release candidate, promote it to a stable release
-              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+              # Keep the patch version and include the branch name for feature branches
+              BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
+              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BRANCH_NAME}.${BUILD_NUMBER}"
             else
-              # Increment the patch version for main
-              PATCH=$((PATCH + 1))
-              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+              # Default version for other branches
+              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD_NUMBER}"
             fi
-          elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
-            # Keep the patch version and include the branch name for feature branches
-            BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
-            FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BRANCH_NAME}.${BUILD_NUMBER}"
-          else
-            # Default version for other branches
-            FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD_NUMBER}"
-          fi
-
-          echo "Computed version: $FULL_VERSION"
-          echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
-
+  
+            echo "Computed version: $FULL_VERSION"
+            echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -143,6 +133,12 @@ jobs:
           python setup.py sdist bdist_wheel
           ls -l dist/
 
+    #   - name: Publish to GitHub Packages
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     run: |
+    #       pip install twine
+    #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
       - name: Push Git Tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
