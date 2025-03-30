@@ -4,8 +4,8 @@ from setuptools import setup, find_packages
 # Define the base version
 BASE_VERSION = "1.3"
 
-# Get the full version from the environment variable or use the base version
-version = os.getenv('PACKAGE_VERSION', BASE_VERSION)
+# Get the full version from the environment variable set by the versioning script
+version = os.getenv('PACKAGE_VERSION')
 
 setup(
     name="itl-demo-python-module",
