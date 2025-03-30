@@ -147,8 +147,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Configure git
-          git config --global user.email "info@itlusions.nl"
-          git config --global user.name "ActionsBot"
-          git tag -a $PACKAGE_VERSION -m "Release $PACKAGE_VERSION"
-          git push origin $PACKAGE_VERSION
+            # Configure git
+            git config --global user.email "info@itlusions.nl"
+            git config --global user.name "ActionsBot"
+            git tag -a $PACKAGE_VERSION -m "Release $PACKAGE_VERSION"
+            git push origin $PACKAGE_VERSION
