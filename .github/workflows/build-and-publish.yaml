@@ -21,7 +21,7 @@ jobs:
         startsWith(github.ref, 'refs/heads/feature/') || 
         (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'closed') && 
         (github.base_ref == 'develop' || github.base_ref == 'main')) || 
-        (github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event.before != '0000000000000000000000000000000000000000')
+        (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -46,7 +46,7 @@ jobs:
   release:
     needs: ci-build
     if: |
-        (github.event_name == 'pull_request' && (github.event.action == 'closed') && 
+        (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
         (github.base_ref == 'develop' || github.base_ref == 'main')) || 
         (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
