@@ -1,5 +1,5 @@
 name: Build and Publish Python Package
-run-name: Build #${{ github.run_number }} - ${{ github.event_name }} on ${{ github.ref_name }}
+run-name: Build ${{ github.run_id }}-${{ github.run_id }}-${{ github.event_name }} on ${{ github.ref_name }}
 
 on:
   push:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   ci-build:
-    name: CI Build for ${{ github.ref_name }} - Run #${{ github.run_number }}
+    name: CI Build for ${{ github.ref_name }} - Run ${{ inputs.build_id }}
     if: |
         startsWith(github.ref, 'refs/heads/feature/') || 
         (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'closed') && 
@@ -46,7 +46,7 @@ jobs:
           ls -l dist/
 
   release:
-    name: Release Job for ${{ github.ref_name }} - Run #${{ github.run_number }}
+    name: Release Job for ${{ github.ref_name }} - Run ${{ inputs.build_id }}
     needs: ci-build
     if: |
         (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
