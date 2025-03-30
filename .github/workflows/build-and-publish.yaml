@@ -3,8 +3,9 @@ name: Build and Publish Python Package
 on:
   push:
     branches:
-      - main
       - 'feature/*'
+      - develop
+      - main
   pull_request:
     branches:
       - develop
@@ -17,8 +18,10 @@ permissions:
 jobs:
   ci-build:
     if: |
-      startsWith(github.ref, 'refs/heads/feature/') || 
-      (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main'))
+        startsWith(github.ref, 'refs/heads/feature/') || 
+        (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'closed') && 
+        (github.base_ref == 'develop' || github.base_ref == 'main')) || 
+        (github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.event.before != '0000000000000000000000000000000000000000')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,6 +31,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+      
 
       - name: Install dependencies
         run: |
@@ -42,10 +46,9 @@ jobs:
   release:
     needs: ci-build
     if: |
-      github.event_name == 'pull_request' && 
-      (github.base_ref == 'develop' || github.base_ref == 'main') &&
-      github.event.action == 'closed' &&
-      github.event.pull_request.merged == true
+        (github.event_name == 'pull_request' && (github.event.action == 'closed') && 
+        (github.base_ref == 'develop' || github.base_ref == 'main')) || 
+        (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -63,10 +66,13 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
           BUILD_NUMBER=${{ github.run_number }}
 
-          if [[ "${{ github.base_ref }}" == "develop" ]]; then
-            FULL_VERSION="${LAST_TAG}-dev.${BUILD_NUMBER}"
+          if [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            FULL_VERSION="${LAST_TAG}.dev.${BUILD_NUMBER}"
+          elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+            BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
+            FULL_VERSION="${LAST_TAG}-${BRANCH_NAME}.${BUILD_NUMBER}"
           else
-            FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"
+            FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"    
           fi
 
           echo "Computed version: $FULL_VERSION"
