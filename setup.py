@@ -1,12 +1,15 @@
 import os
 from setuptools import setup, find_packages
 
-# Get version from environment variable
-version = os.getenv('PACKAGE_VERSION', '1.0.0')  # Default to '1.0.0' if the variable is not set
+# Define the base version
+BASE_VERSION = "1.2"
+
+# Get the full version from the environment variable or use the base version
+version = os.getenv('PACKAGE_VERSION', BASE_VERSION)
 
 setup(
     name="itl-demo-python-module",
-    version=version,  # Use version from the environment variable
+    version=version,  # Use the dynamically computed version
     author="Niels Weistra @ ITlusions",
     description="A demo Python package for GitHub Actions CI/CD.",
     package_dir={"": "itl.demo.python.module/src"},  # Point to the correct 'src' directory
