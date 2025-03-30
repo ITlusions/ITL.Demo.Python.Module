@@ -1,5 +1,5 @@
 name: Build and Publish Python Package
-run-name: Build ${{ github.run_id }}-${{ github.run_id }}-${{ github.event_name }} on ${{ github.ref_name }}
+run-name: Build and Publish Run ID ${{ github.run_id }} for event ${{ github.event_name }} on ${{ github.ref_name }}
 
 on:
   push:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   ci-build:
-    name: CI Build for ${{ github.ref_name }} - Run ${{ inputs.build_id }}
+    name: CI Build for ${{ github.ref_name }} - Run ${{ github.run_id }}
     if: |
         startsWith(github.ref, 'refs/heads/feature/') || 
         (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'closed') && 
@@ -46,7 +46,7 @@ jobs:
           ls -l dist/
 
   release:
-    name: Release Job for ${{ github.ref_name }} - Run ${{ inputs.build_id }}
+    name: Release Job for ${{ github.ref_name }} - Run ${{ github.run_id }}
     needs: ci-build
     if: |
         (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && 
@@ -134,7 +134,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
-      - name: Build package ${{ env.PACKAGE_VERSION }}
+      - name: Build package ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
         run: |
           python setup.py sdist bdist_wheel
           ls -l dist/
@@ -145,12 +145,12 @@ jobs:
     #     run: |
     #       pip install twine
     #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
-      - name: Push Git Tag ${{ env.PACKAGE_VERSION }}
+      - name: Push Git Tag ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
             # Configure git
             git config --global user.email "info@itlusions.nl"
             git config --global user.name "ActionsBot"
-            git tag -a $PACKAGE_VERSION -m "Release $PACKAGE_VERSION"
-            git push origin $PACKAGE_VERSION
+            git tag -a ${{ steps.compute_version.outputs.PACKAGE_VERSION }} -m "Release ${{ steps.compute_version.outputs.PACKAGE_VERSION }}"
+            git push origin ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
