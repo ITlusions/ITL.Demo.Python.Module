@@ -88,12 +88,12 @@ jobs:
           python setup.py sdist bdist_wheel
           ls -l dist/
 
-      - name: Publish to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pip install twine
-          python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
+    #   - name: Publish to GitHub Packages
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     run: |
+    #       pip install twine
+    #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
       - name: Push Git Tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
