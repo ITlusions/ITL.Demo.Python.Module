@@ -96,7 +96,7 @@ jobs:
             PATCH=$(echo $LAST_TAG | cut -d'.' -f3)
   
             # Increment the patch version for both develop and main branches
-            if [[ "${{ github.ref }}" == 'refs/heads/main' || "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
               PATCH=$((PATCH + 1))
             fi
   
