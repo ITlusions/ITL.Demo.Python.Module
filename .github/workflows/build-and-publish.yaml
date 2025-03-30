@@ -136,7 +136,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
-      - name: Build package ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
+      - name: Build package ${{ env.PACKAGE_VERSION }}
         run: |
           python setup.py sdist bdist_wheel
           ls -l dist/
@@ -147,7 +147,7 @@ jobs:
     #     run: |
     #       pip install twine
     #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
-      - name: Push Git Tag ${{ steps.compute_version.outputs.PACKAGE_VERSION }}
+      - name: Push Git Tag ${{ env.PACKAGE_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
