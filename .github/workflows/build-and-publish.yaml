@@ -66,8 +66,8 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
           BUILD_NUMBER=${{ github.run_number }}
 
-          if [[ "${{ github.base_ref }}" == "develop" ]]; then
-            FULL_VERSION="${LAST_TAG}-dev.${BUILD_NUMBER}"
+          if [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            FULL_VERSION="${LAST_TAG}.dev.${BUILD_NUMBER}"
           elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
             BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
             FULL_VERSION="${LAST_TAG}-${BRANCH_NAME}.${BUILD_NUMBER}"
