@@ -59,11 +59,18 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Compute Version
+      - name: Extract Base Version
+        id: extract_version
+        run: |
+            BASE_VERSION=$(grep -oP '(?<=BASE_VERSION = ")[^"]+' setup.py)
+            echo "Base version: $BASE_VERSION"
+            echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+
+      - name: Compute Full Version
         id: compute_version
         run: |
             git fetch --tags --force || true
-            LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "1.0.0")
+            LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "$BASE_VERSION")
             BUILD_NUMBER=${{ github.run_number }}
 
             # Extract major, minor, and patch versions
@@ -72,24 +79,24 @@ jobs:
             PATCH=$(echo $LAST_TAG | cut -d'.' -f3)
 
             if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
-              # Increment the patch version for releases on main
-              PATCH=$((PATCH + 1))
-              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+                # Increment the patch version for releases on main
+                PATCH=$((PATCH + 1))
+                FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
             elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
-              # Use a development version for develop
-              FULL_VERSION="${LAST_TAG}.dev.${BUILD_NUMBER}"
+                # Keep the patch version and append .dev.<BUILD_NUMBER> for develop
+                FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.dev.${BUILD_NUMBER}"
             elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
-              # Include the branch name for feature branches
-              BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
-              FULL_VERSION="${LAST_TAG}.${BRANCH_NAME}.${BUILD_NUMBER}"
+                # Keep the patch version and include the branch name for feature branches
+                BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
+                FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BRANCH_NAME}.${BUILD_NUMBER}"
             else
-              # Default version for other branches
-              FULL_VERSION="${LAST_TAG}.${BUILD_NUMBER}"
+                # Default version for other branches
+                FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD_NUMBER}"
             fi
 
             echo "Computed version: $FULL_VERSION"
             echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
-
+            
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
