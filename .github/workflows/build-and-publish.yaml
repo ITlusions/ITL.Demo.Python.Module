@@ -62,21 +62,33 @@ jobs:
       - name: Compute Version
         id: compute_version
         run: |
-          git fetch --tags || true
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
-          BUILD_NUMBER=${{ github.run_number }}
+            git fetch --tags || true
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
+            BUILD_NUMBER=${{ github.run_number }}
 
-          if [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            # Extract major, minor, and patch versions
+            MAJOR=$(echo $LAST_TAG | cut -d'.' -f1)
+            MINOR=$(echo $LAST_TAG | cut -d'.' -f2)
+            PATCH=$(echo $LAST_TAG | cut -d'.' -f3)
+
+            if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+            # Increment the patch version for releases on main
+            PATCH=$((PATCH + 1))
+            FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            # Use a development version for develop
             FULL_VERSION="${LAST_TAG}.dev.${BUILD_NUMBER}"
-          elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+            elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+            # Include the branch name for feature branches
             BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
-            FULL_VERSION="${LAST_TAG}-${BRANCH_NAME}.${BUILD_NUMBER}"
-          else
-            FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"    
-          fi
+            FULL_VERSION="${LAST_TAG}.${BRANCH_NAME}.${BUILD_NUMBER}"
+            else
+            # Default version for other branches
+            FULL_VERSION="${LAST_TAG}.${BUILD_NUMBER}"
+            fi
 
-          echo "Computed version: $FULL_VERSION"
-          echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
+            echo "Computed version: $FULL_VERSION"
+            echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
@@ -88,9 +100,18 @@ jobs:
           python setup.py sdist bdist_wheel
           ls -l dist/
 
-      - name: Publish to GitHub Packages
+    #   - name: Publish to GitHub Packages
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     run: |
+    #       pip install twine
+    #       python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
+      - name: Push Git Tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pip install twine
-          python -m twine upload --repository-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload dist/*
+            # Configure git
+            git config --global user.email "info@itlusions.nl"
+            git config --global user.name "ActionsBot"
+            git tag -a $PACKAGE_VERSION -m "Release $PACKAGE_VERSION"
+            git push origin $PACKAGE_VERSION
