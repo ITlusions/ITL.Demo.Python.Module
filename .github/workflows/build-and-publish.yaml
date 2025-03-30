@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+      
 
       - name: Install dependencies
         run: |
@@ -68,7 +69,11 @@ jobs:
           if [[ "${{ github.base_ref }}" == "develop" ]]; then
             FULL_VERSION="${LAST_TAG}-dev.${BUILD_NUMBER}"
           else
-            FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"
+            [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+            BRANCH_NAME=$(echo "${{ github.ref }}" | cut -d'/' -f4)
+            FULL_VERSION="${LAST_TAG}-${BRANCH_NAME}.${BUILD_NUMBER}"
+          elsif  
+            FULL_VERSION="${LAST_TAG}-${BUILD_NUMBER}"    
           fi
 
           echo "Computed version: $FULL_VERSION"
