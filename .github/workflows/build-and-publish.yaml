@@ -1,5 +1,5 @@
 name: Build and Publish Python Package
-run-name: Build and Publish Run ID ${{ github.run_id }} for event ${{ github.event_name }} on ${{ github.ref_name }}
+run-name: ${{ github.repository }}-${{ github.ref_name }}-${{ github.run_number }}-${{ github.run_id }}
 
 on:
   push:
