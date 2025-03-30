@@ -73,14 +73,20 @@ jobs:
             LAST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "")
             echo "Last tag: $LAST_TAG"
   
-            if [[ "$LAST_TAG" != "$BASE_VERSION" ]]; then
+            if [[ -n "$LAST_TAG" ]]; then
+              LAST_BASE_VERSION=$(echo "$LAST_TAG" | grep -oP '^\d+\.\d+')
+            else
+              LAST_BASE_VERSION=""
+            fi
+
+            if [[ "$BASE_VERSION" > "$LAST_BASE_VERSION" ]]; then
               echo "New base version detected: $BASE_VERSION"
               git config --global user.email "info@itlusions.nl"
               git config --global user.name "ActionsBot"
-              git tag -a "$BASE_VERSION" -m "Base version $BASE_VERSION"
-              git push origin "$BASE_VERSION"
+              git tag -a "$BASE_VERSION.0" -m "Base version $BASE_VERSION"
+              git push origin "$BASE_VERSION.0"
             else
-              echo "Base version $BASE_VERSION already exists as a tag."
+              echo "Base version $BASE_VERSION is not higher than the last base version $LAST_BASE_VERSION or already exists as a tag."
             fi
   
       - name: Compute Full Version
@@ -96,7 +102,7 @@ jobs:
             PATCH=$(echo $LAST_TAG | cut -d'.' -f3)
   
             # Increment the patch version for both develop and main branches
-            if [[ "${{ github.ref }}" == 'refs/heads/main' || "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
               PATCH=$((PATCH + 1))
             fi
   
