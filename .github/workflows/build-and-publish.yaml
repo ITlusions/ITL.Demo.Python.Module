@@ -58,7 +58,7 @@ jobs:
         (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     environment:
-       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/develop' && 'development' }}
+       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/develop' && 'development' || 'integration' }}
        url: https://github.com/${{ github.repository }}/releases
     steps:
       - name: Checkout code
